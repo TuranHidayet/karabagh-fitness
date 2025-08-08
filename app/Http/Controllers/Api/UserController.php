@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 
+
 class UserController extends Controller
 {
     /**
@@ -15,7 +16,7 @@ class UserController extends Controller
      */
     public function index(): JsonResponse
     {
-        $users = User::all();
+        $users = User::with('roles')->get();
         return response()->json($users);
     }
 
@@ -24,7 +25,14 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): JsonResponse
     {
-        $user = User::create($request->validated());
+         $data = $request->validated();
+
+        if (isset($data['password'])) {
+            $data['password'] = bcrypt($data['password']);
+        }
+
+        $user = User::create($data);
+
         return response()->json($user, 201);
     }
 
@@ -33,6 +41,7 @@ class UserController extends Controller
      */
     public function show(User $user): JsonResponse
     {
+        $user->load('roles');
         return response()->json($user);
     }
 
@@ -53,4 +62,19 @@ class UserController extends Controller
         $user->delete();
         return response()->json(['message' => 'İstifadəçi silindi']);
     }
+
+    public function assignRole(Request $request, User $user)
+    {
+        $request->validate([
+            'role_id' => 'required|exists:roles,id'
+        ]);
+
+        $role = Role::find($request->role_id);
+
+        $user->roles()->syncWithoutDetaching([$role->id]);
+
+        return response()->json(['message' => 'Rol uğurla təyin edildi.']);
+    }
+
+
 }

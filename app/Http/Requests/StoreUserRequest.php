@@ -23,6 +23,7 @@ class StoreUserRequest extends FormRequest
             'guardian_name' => 'nullable|string',
             'guardian_birth_date' => 'nullable|date',
             'card_id' => 'required|string|unique:users,card_id',
+            'password' => 'nullable|string|min:6'
         ];
     }
 }

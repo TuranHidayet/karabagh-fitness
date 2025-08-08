@@ -25,6 +25,7 @@ class UpdateUserRequest extends FormRequest
             'guardian_name' => 'nullable|string',
             'guardian_birth_date' => 'nullable|date',
             'card_id' => 'sometimes|string|unique:users,card_id,' . $id,
+            'password' => 'nullable|string|min:6'
         ];
     }
 }
