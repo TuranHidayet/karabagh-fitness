@@ -118,19 +118,21 @@ class UserController extends Controller
     }
 
     public function assignRole(Request $request, User $user)
-    {
-        $request->validate([
-            'role_id' => 'required|exists:roles,id'
-        ]);
+{
+    $request->validate([
+        'role_id' => 'required|exists:roles,id'
+    ]);
 
-        $role = Role::find($request->role_id);
+    $role = Role::find($request->role_id);
 
-        Log::info("Assigning role {$role->name} to user {$user->id}");
+    Log::info("Assigning role {$role->name} to user {$user->id}");
 
-        $user->roles()->syncWithoutDetaching([$role->id]);
+    $user->assignRole($role->name);
 
-        Log::info("Role assigned");
+    Log::info("Role assigned");
 
-        return response()->json(['message' => 'Rol uğurla təyin edildi.']);
-    }
+    return response()->json(['message' => 'Rol uğurla təyin edildi.']);
+}
+
+
 }

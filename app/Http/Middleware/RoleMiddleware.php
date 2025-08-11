@@ -9,10 +9,9 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, $role)
     {
-        if (!auth()->check() || !auth()->user()->hasRole($role)) {
-            return response()->json(['message' => 'İcazəniz yoxdur'], 403);
+        if (!$request->user() || !$request->user()->hasRole($role)) {
+            return response()->json(['message' => 'İcazəniz yoxdur.'], 403);
         }
-
         return $next($request);
     }
 }

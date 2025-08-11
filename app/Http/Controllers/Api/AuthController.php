@@ -68,4 +68,40 @@ class AuthController extends Controller
             'message' => 'Çıxış edildi.',
         ]);
     }
+
+     public function adminLogin(Request $request)
+    {
+        // Validasiya
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        // Giriş cəhd et
+        if (!Auth::attempt($credentials)) {
+            throw ValidationException::withMessages([
+                'email' => ['Email və ya şifrə səhvdir.'],
+            ]);
+        }
+
+        $user = Auth::user();
+
+        // İstifadəçi admin roluna sahibdir?
+        if (!$user->hasRole('admin')) {
+            return response()->json(['message' => 'Siz admin deyilsiniz.'], 403);
+        }
+
+        // Token yarat (sanctum istifadə olunur)
+        $token = $user->createToken('admin-token')->plainTextToken;
+
+        // İstifadəçi məlumatları və token qaytar
+        return response()->json([
+            'user' => [
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+            ],
+            'token' => $token,
+        ]);
+    }
 }

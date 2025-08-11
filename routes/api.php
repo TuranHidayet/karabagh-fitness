@@ -14,10 +14,14 @@ Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logo
 Route::middleware(['auth:sanctum'])->post('/users/{user}/assign-role', [UserController::class, 'assignRole']);
 
 
+Route::post('admin/login', [AuthController::class, 'adminLogin']);
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-    Route::get('/admin-panel', fn() => response()->json(['message' => 'Admin Panel']));
+    Route::get('/admin-panel', function () {
+        return response()->json(['message' => 'Admin Panel']);
+    });
 });
+
 
 Route::middleware(['auth:sanctum', 'role:trainer'])->group(function () {
     Route::get('/trainer/profile', fn() => response()->json(['message' => 'Trainer Profili']));
