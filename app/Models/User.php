@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Filament\Models\Contracts\FilamentUser;
 use Laravel\Sanctum\HasApiTokens;
 use Filament\Panel;
+use Carbon\Carbon;
+
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -21,7 +23,7 @@ class User extends Authenticatable implements FilamentUser
      * @var list<string>
      */
     protected $fillable = [
-        'first_name',
+         'first_name',
         'last_name',
         'birth_date',
         'phone',
@@ -31,6 +33,10 @@ class User extends Authenticatable implements FilamentUser
         'guardian_birth_date',
         'card_id',
         'password',
+        'package_id',
+        'start_date',
+        'end_date',
+        'promo_code',
     ];
 
     /**
@@ -56,16 +62,6 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    public function roles()
-    {
-        return $this->belongsToMany(Role::class);
-    }
-
-    public function hasRole($role)
-    {
-        return $this->roles()->where('name', $role)->exists();
-    }
-
     // Bu user-in təyin etdiyi user-lər (əgər trainerdirsə)
     public function assignedUsers() {
         return $this->belongsToMany(User::class, 'trainer_user', 'trainer_id', 'user_id');
@@ -81,8 +77,40 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasRole('admin');
     }
 
-    public function setPasswordAttribute($value)
+    public function package()
     {
-        $this->attributes['password'] = bcrypt($value);
+        return $this->belongsTo(Package::class);
     }
+
+    public function setStartDateAttribute($value)
+{
+    $this->attributes['start_date'] = $value;
+
+    if ($this->package) {
+        $start = Carbon::parse($value);
+
+        switch ($this->package->duration) {
+            case 'daily':
+                $end = $start->copy()->addDay();
+                break;
+
+            case 'weekly':
+                $end = $start->copy()->addWeek();
+                break;
+
+            case 'monthly':
+                $end = $start->copy()->addMonth();
+                break;
+
+            case 'yearly':
+                $end = $start->copy()->addYear();
+                break;
+
+            default:
+                $end = null;
+        }
+
+        $this->attributes['end_date'] = $end ? $end->format('Y-m-d') : null;
+    }
+}
 }
