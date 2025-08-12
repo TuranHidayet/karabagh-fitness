@@ -6,10 +6,13 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Api\CampaignController;
+use App\Http\Controllers\Api\PackageController;
 
 
 Route::apiResource('users', UserController::class);
 Route::apiResource('roles', RoleController::class);
+Route::apiResource('packages', PackageController::class);
+
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 Route::middleware(['auth:sanctum'])->post('/users/{user}/assign-role', [UserController::class, 'assignRole']);
