@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Api\CampaignController;
 
 
 Route::apiResource('users', UserController::class);
@@ -33,6 +34,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payments/{user}', [PaymentController::class, 'index']); 
 });
 
+Route::apiResource('campaigns', CampaignController::class);
+
+Route::get('campaigns', [CampaignController::class, 'index']);
+Route::get('campaigns/{campaign}', [CampaignController::class, 'show']);
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::post('campaigns', [CampaignController::class, 'store']);
+    Route::put('campaigns/{campaign}', [CampaignController::class, 'update']);
+    Route::delete('campaigns/{campaign}', [CampaignController::class, 'destroy']);
+});
 
 
 

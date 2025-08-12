@@ -7,6 +7,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Models\Package;
+use App\Models\Campaign;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
@@ -28,34 +29,61 @@ class UserController extends Controller
      * Yeni istifadəçi yarat
      */
     public function store(StoreUserRequest $request): JsonResponse
-{
-    $data = $request->validated();
+    {
+        $data = $request->validated();
 
-    if (isset($data['password'])) {
-        $data['password'] = bcrypt($data['password']);
-    }
+        if (isset($data['password'])) {
+            $data['password'] = bcrypt($data['password']);
+        }
 
-    if (!empty($data['package_id'])) {
-        $package = Package::find($data['package_id']);
-        if ($package) {
+        // Kampaniya seçilibsə -> ona görə tarixləri hesabla və paket boş qoy
+        if (!empty($data['campaign_id'])) {
+            $campaign = Campaign::findOrFail($data['campaign_id']);
+
             $startDate = isset($data['start_date']) ? Carbon::parse($data['start_date']) : Carbon::now();
-
-            // Əgər package modelində duration_days var, onu istifadə et
-            if ($package->duration_days) {
-                $endDate = $startDate->copy()->addDays($package->duration_days);
-            } else {
-                $endDate = $startDate;
-            }
+            $endDate = $startDate->copy()->addMonths($campaign->duration_months);
 
             $data['start_date'] = $startDate->format('Y-m-d');
             $data['end_date'] = $endDate->format('Y-m-d');
+
+            $data['package_id'] = null;
         }
+        // Əks halda paket məntiqi
+        elseif (!empty($data['package_id'])) {
+            $package = Package::find($data['package_id']);
+            if ($package) {
+                $startDate = isset($data['start_date']) ? Carbon::parse($data['start_date']) : Carbon::now();
+
+                if (!empty($package->duration_days)) {
+                    $endDate = $startDate->copy()->addDays($package->duration_days);
+                } elseif (!empty($package->duration) && !empty($package->duration_type)) {
+                    // Əgər sənin package modelində month/year/days fərqli saxlama üsulu varsa onu tətbiq et
+                    switch ($package->duration_type) {
+                        case 'day':
+                            $endDate = $startDate->copy()->addDays($package->duration);
+                            break;
+                        case 'month':
+                            $endDate = $startDate->copy()->addMonths($package->duration);
+                            break;
+                        case 'year':
+                            $endDate = $startDate->copy()->addYears($package->duration);
+                            break;
+                        default:
+                            $endDate = $startDate;
+                    }
+                } else {
+                    $endDate = $startDate;
+                }
+
+                $data['start_date'] = $startDate->format('Y-m-d');
+                $data['end_date'] = $endDate->format('Y-m-d');
+            }
+        }
+
+        $user = User::create($data);
+
+        return response()->json($user, 201);
     }
-
-    $user = User::create($data);
-
-    return response()->json($user, 201);
-}
 
 
     /**
@@ -71,41 +99,41 @@ class UserController extends Controller
      * İstifadəçini yenilə
      */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
-{
-    $data = $request->validated();
+    {
+        $data = $request->validated();
 
-    if (!empty($data['package_id'])) {
-        $package = Package::find($data['package_id']);
-        if ($package) {
-            $startDate = isset($data['start_date']) ? \Carbon\Carbon::parse($data['start_date']) : \Carbon\Carbon::now();
+        if (!empty($data['package_id'])) {
+            $package = Package::find($data['package_id']);
+            if ($package) {
+                $startDate = isset($data['start_date']) ? \Carbon\Carbon::parse($data['start_date']) : \Carbon\Carbon::now();
 
-            if ($package->duration && $package->duration_type) {
-                switch ($package->duration_type) {
-                    case 'day':
-                        $endDate = $startDate->copy()->addDays($package->duration);
-                        break;
-                    case 'month':
-                        $endDate = $startDate->copy()->addMonths($package->duration);
-                        break;
-                    case 'year':
-                        $endDate = $startDate->copy()->addYears($package->duration);
-                        break;
-                    default:
-                        $endDate = $startDate;
+                if ($package->duration && $package->duration_type) {
+                    switch ($package->duration_type) {
+                        case 'day':
+                            $endDate = $startDate->copy()->addDays($package->duration);
+                            break;
+                        case 'month':
+                            $endDate = $startDate->copy()->addMonths($package->duration);
+                            break;
+                        case 'year':
+                            $endDate = $startDate->copy()->addYears($package->duration);
+                            break;
+                        default:
+                            $endDate = $startDate;
+                    }
+                } else {
+                    $endDate = $startDate;
                 }
-            } else {
-                $endDate = $startDate;
+
+                $data['start_date'] = $startDate->format('Y-m-d');
+                $data['end_date'] = $endDate->format('Y-m-d');
             }
-
-            $data['start_date'] = $startDate->format('Y-m-d');
-            $data['end_date'] = $endDate->format('Y-m-d');
         }
+
+        $user->update($data);
+
+        return response()->json($user);
     }
-
-    $user->update($data);
-
-    return response()->json($user);
-}
 
 
     /**
@@ -118,21 +146,25 @@ class UserController extends Controller
     }
 
     public function assignRole(Request $request, User $user)
-{
-    $request->validate([
-        'role_id' => 'required|exists:roles,id'
-    ]);
+    {
+        $request->validate([
+            'role_id' => 'required|exists:roles,id'
+        ]);
 
-    $role = Role::find($request->role_id);
+        $role = Role::find($request->role_id);
 
-    Log::info("Assigning role {$role->name} to user {$user->id}");
+        if (!$role) {
+            return response()->json(['message' => 'Rol tapılmadı'], 404);
+        }
 
-    $user->assignRole($role->name);
+        Log::info("Assigning role {$role->name} to user {$user->id}");
 
-    Log::info("Role assigned");
+        $user->assignRole($role->name);
 
-    return response()->json(['message' => 'Rol uğurla təyin edildi.']);
-}
+        Log::info("Role assigned. User roles now: " . $user->roles->pluck('name')->join(', '));
+        
+        return response()->json(['message' => 'Rol uğurla təyin edildi.']);
+    }
 
 
 }

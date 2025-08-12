@@ -34,6 +34,7 @@ class User extends Authenticatable implements FilamentUser
         'card_id',
         'password',
         'package_id',
+        'campaign_id',
         'start_date',
         'end_date',
         'promo_code',
@@ -54,14 +55,13 @@ class User extends Authenticatable implements FilamentUser
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
+    protected $guard_name = 'web';
+    
     // Bu user-in təyin etdiyi user-lər (əgər trainerdirsə)
     public function assignedUsers() {
         return $this->belongsToMany(User::class, 'trainer_user', 'trainer_id', 'user_id');
@@ -82,35 +82,40 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsTo(Package::class);
     }
 
-    public function setStartDateAttribute($value)
-{
-    $this->attributes['start_date'] = $value;
-
-    if ($this->package) {
-        $start = Carbon::parse($value);
-
-        switch ($this->package->duration) {
-            case 'daily':
-                $end = $start->copy()->addDay();
-                break;
-
-            case 'weekly':
-                $end = $start->copy()->addWeek();
-                break;
-
-            case 'monthly':
-                $end = $start->copy()->addMonth();
-                break;
-
-            case 'yearly':
-                $end = $start->copy()->addYear();
-                break;
-
-            default:
-                $end = null;
-        }
-
-        $this->attributes['end_date'] = $end ? $end->format('Y-m-d') : null;
+    public function campaign()
+    {
+        return $this->belongsTo(Campaign::class);
     }
-}
+
+    public function setStartDateAttribute($value)
+    {
+        $this->attributes['start_date'] = $value;
+
+        if ($this->package) {
+            $start = Carbon::parse($value);
+
+            switch ($this->package->duration) {
+                case 'daily':
+                    $end = $start->copy()->addDay();
+                    break;
+
+                case 'weekly':
+                    $end = $start->copy()->addWeek();
+                    break;
+
+                case 'monthly':
+                    $end = $start->copy()->addMonth();
+                    break;
+
+                case 'yearly':
+                    $end = $start->copy()->addYear();
+                    break;
+
+                default:
+                    $end = null;
+            }
+
+            $this->attributes['end_date'] = $end ? $end->format('Y-m-d') : null;
+        }
+    }
 }
