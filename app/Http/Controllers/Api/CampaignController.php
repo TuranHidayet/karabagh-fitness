@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCampaignRequest;
 use App\Models\Campaign;
+use Illuminate\Http\JsonResponse;
 
 class CampaignController extends Controller
 {
@@ -19,14 +20,23 @@ class CampaignController extends Controller
     /**
      * Yeni kampaniya əlavə et
      */
-    public function store(StoreCampaignRequest $request)
+ public function store(CampaignServiceRequest $request): JsonResponse
     {
-        $campaign = Campaign::create($request->validated());
+        $data = $request->validated();
 
-        return response()->json([
-            'message' => 'Kampaniya uğurla yaradıldı',
-            'data' => $campaign
-        ], 201);
+        $campaign = Campaign::create([
+            'name' => $data['name'],
+            'duration_months' => $data['duration_months'],
+            'price' => $data['price'],
+        ]);
+
+        if (!empty($data['service_ids'])) {
+            $campaign->services()->sync($data['service_ids']);
+        }
+
+        $campaign->load('services'); 
+
+        return response()->json($campaign, 201);
     }
 
     /**

@@ -11,4 +11,9 @@ class Campaign extends Model
     protected $casts = [
         'services' => 'array', 
     ];
+
+    public function services()
+    {
+        return $this->belongsToMany(Service::class, 'campaign_service');
+    }
 }

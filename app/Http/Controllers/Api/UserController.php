@@ -146,25 +146,22 @@ class UserController extends Controller
     }
 
     public function assignRole(Request $request, User $user)
-    {
-        $request->validate([
-            'role_id' => 'required|exists:roles,id'
-        ]);
+{
+    $request->validate([
+        'role_id' => 'required|exists:roles,id'
+    ]);
 
-        $role = Role::find($request->role_id);
+    $role = \Spatie\Permission\Models\Role::find($request->role_id);
 
-        if (!$role) {
-            return response()->json(['message' => 'Rol tapılmadı'], 404);
-        }
-
-        Log::info("Assigning role {$role->name} to user {$user->id}");
-
-        $user->assignRole($role->name);
-
-        Log::info("Role assigned. User roles now: " . $user->roles->pluck('name')->join(', '));
-        
-        return response()->json(['message' => 'Rol uğurla təyin edildi.']);
+    if (!$role) {
+        return response()->json(['message' => 'Rol tapılmadı'], 404);
     }
+
+    $user->assignRole($role->name);
+
+    return response()->json(['message' => 'Rol uğurla təyin edildi.'], 201);
+}
+
 
 
 }

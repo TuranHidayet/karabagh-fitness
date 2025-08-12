@@ -7,11 +7,13 @@ use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\PackageController;
+use App\Http\Controllers\Api\ServiceController;
 
 
 Route::apiResource('users', UserController::class);
 Route::apiResource('roles', RoleController::class);
 Route::apiResource('packages', PackageController::class);
+Route::apiResource('services', ServiceController::class);
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
