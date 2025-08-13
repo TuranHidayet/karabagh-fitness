@@ -10,65 +10,83 @@ use Illuminate\Http\JsonResponse;
 class CampaignController extends Controller
 {
     /**
-     * Bütün kampaniyaları göstər
+     * Bütün kampaniyaları göstərmək
      */
-    public function index()
+    public function index(): JsonResponse
     {
-        return response()->json(Campaign::all());
-    }
-
-    /**
-     * Yeni kampaniya əlavə et
-     */
- public function store(CampaignServiceRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-
-        $campaign = Campaign::create([
-            'name' => $data['name'],
-            'duration_months' => $data['duration_months'],
-            'price' => $data['price'],
-        ]);
-
-        if (!empty($data['service_ids'])) {
-            $campaign->services()->sync($data['service_ids']);
-        }
-
-        $campaign->load('services'); 
-
-        return response()->json($campaign, 201);
-    }
-
-    /**
-     * Tək kampaniyanı göstər
-     */
-    public function show(Campaign $campaign)
-    {
-        return response()->json($campaign);
-    }
-
-    /**
-     * Kampaniyanı yenilə
-     */
-    public function update(StoreCampaignRequest $request, Campaign $campaign)
-    {
-        $campaign->update($request->validated());
+        $campaigns = Campaign::with('services')->get();
 
         return response()->json([
-            'message' => 'Kampaniya uğurla yeniləndi',
-            'data' => $campaign
+            'message' => 'Campaigns fetched successfully',
+            'data' => $campaigns
         ]);
     }
 
     /**
-     * Kampaniyanı sil
+     * Bir kampaniyanı göstərmək
      */
-    public function destroy(Campaign $campaign)
+    public function show(Campaign $campaign): JsonResponse
     {
+        return response()->json([
+            'message' => 'Campaign fetched successfully',
+            'data' => $campaign->load('services')
+        ]);
+    }
+
+    /**
+     * Yeni kampaniya yaratmaq
+     */
+    public function store(StoreCampaignRequest $request): JsonResponse
+    {
+        $campaign = Campaign::create([
+            'name' => $request->name,
+            'duration_months' => $request->duration_months,
+            'price' => $request->price,
+        ]);
+
+        if ($request->filled('services')) {
+            $campaign->services()->attach($request->services);
+        }
+
+        return response()->json([
+            'message' => 'Campaign created successfully',
+            'data' => $campaign->load('services')
+        ], 201);
+    }
+
+    /**
+     * Kampaniyanı yeniləmək
+     */
+    public function update(StoreCampaignRequest $request, Campaign $campaign): JsonResponse
+    {
+        $campaign->update([
+            'name' => $request->name,
+            'duration_months' => $request->duration_months,
+            'price' => $request->price,
+        ]);
+
+        if ($request->filled('services')) {
+            $campaign->services()->sync($request->services);
+        } else {
+            $campaign->services()->detach();
+        }
+
+        return response()->json([
+            'message' => 'Campaign updated successfully',
+            'data' => $campaign->load('services')
+        ]);
+    }
+
+    /**
+     * Kampaniyanı silmək
+     */
+    public function destroy(Campaign $campaign): JsonResponse
+    {
+        $campaign->services()->detach();
         $campaign->delete();
 
         return response()->json([
-            'message' => 'Kampaniya uğurla silindi'
+            'message' => 'Campaign deleted successfully'
         ]);
     }
 }

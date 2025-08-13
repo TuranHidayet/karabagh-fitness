@@ -26,7 +26,7 @@ class StoreCampaignRequest extends FormRequest
             'duration_months' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
             'services' => 'nullable|array',
-            'services.*' => 'string',
+            'services.*' => 'integer|exists:services,id',
         ];
     }
 }

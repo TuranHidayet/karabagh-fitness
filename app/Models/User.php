@@ -62,6 +62,8 @@ class User extends Authenticatable implements FilamentUser
     ];
 
     protected $guard_name = 'web';
+
+    
     
     // Bu user-in təyin etdiyi user-lər (əgər trainerdirsə)
     public function assignedUsers() {
