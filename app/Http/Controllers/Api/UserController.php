@@ -7,6 +7,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Models\Package;
+use Illuminate\Support\Str;
 use App\Models\Campaign;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,8 @@ class UserController extends Controller
         if (isset($data['password'])) {
             $data['password'] = bcrypt($data['password']);
         }
+
+        $data['card_id'] = Str::uuid();
 
         // Kampaniya seçilibsə -> ona görə tarixləri hesabla və paket boş qoy
         if (!empty($data['campaign_id'])) {
@@ -99,41 +102,52 @@ class UserController extends Controller
      * İstifadəçini yenilə
      */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
-    {
-        $data = $request->validated();
+{
+    $data = $request->validated();
 
-        if (!empty($data['package_id'])) {
-            $package = Package::find($data['package_id']);
-            if ($package) {
-                $startDate = isset($data['start_date']) ? \Carbon\Carbon::parse($data['start_date']) : \Carbon\Carbon::now();
-
-                if ($package->duration && $package->duration_type) {
-                    switch ($package->duration_type) {
-                        case 'day':
-                            $endDate = $startDate->copy()->addDays($package->duration);
-                            break;
-                        case 'month':
-                            $endDate = $startDate->copy()->addMonths($package->duration);
-                            break;
-                        case 'year':
-                            $endDate = $startDate->copy()->addYears($package->duration);
-                            break;
-                        default:
-                            $endDate = $startDate;
-                    }
-                } else {
-                    $endDate = $startDate;
-                }
-
-                $data['start_date'] = $startDate->format('Y-m-d');
-                $data['end_date'] = $endDate->format('Y-m-d');
-            }
-        }
-
-        $user->update($data);
-
-        return response()->json($user);
+    // Əgər password varsa, hash edirik
+    if (!empty($data['password'])) {
+        $data['password'] = bcrypt($data['password']);
     }
+
+    // Əgər package seçilibsə, tarixləri hesablamaq
+    if (!empty($data['package_id'])) {
+        $package = Package::find($data['package_id']);
+        if ($package) {
+            $startDate = isset($data['start_date']) ? Carbon::parse($data['start_date']) : Carbon::now();
+
+            if (!empty($package->duration) && !empty($package->duration_type)) {
+                switch ($package->duration_type) {
+                    case 'day':
+                        $endDate = $startDate->copy()->addDays($package->duration);
+                        break;
+                    case 'month':
+                        $endDate = $startDate->copy()->addMonths($package->duration);
+                        break;
+                    case 'year':
+                        $endDate = $startDate->copy()->addYears($package->duration);
+                        break;
+                    default:
+                        $endDate = $startDate;
+                }
+            } else {
+                $endDate = $startDate;
+            }
+
+            $data['start_date'] = $startDate->format('Y-m-d');
+            $data['end_date'] = $endDate->format('Y-m-d');
+        }
+    }
+
+    // Əgər card_id yoxdursa, avtomatik yaradılır
+    if (empty($user->card_id)) {
+        $data['card_id'] = \Illuminate\Support\Str::uuid();
+    }
+
+    $user->update($data);
+
+    return response()->json($user);
+}
 
 
     /**

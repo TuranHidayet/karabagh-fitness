@@ -21,7 +21,7 @@ class RoleController extends Controller
 
         $role = Role::create([
             'name' => $request->name,
-            'guard_name' => 'api'
+            'guard_name' => 'sanctum', 
         ]);
 
         return response()->json($role, 201);

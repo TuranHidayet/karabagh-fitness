@@ -22,7 +22,7 @@ class StoreUserRequest extends FormRequest
             'gender' => 'required|in:m,f',
             'guardian_name' => 'nullable|string',
             'guardian_birth_date' => 'nullable|date',
-            'card_id' => 'required|string|unique:users,card_id',
+            'card_id' => 'nullable|string|unique:users,card_id',
             'password' => 'nullable|string|min:6',
             'package_id' => 'nullable|exists:packages,id|required_without:campaign_id',
             'campaign_id' => 'nullable|exists:campaigns,id|required_without:package_id',
