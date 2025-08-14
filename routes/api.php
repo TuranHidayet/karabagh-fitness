@@ -19,6 +19,10 @@ Route::apiResource('campaigns', CampaignController::class);
 
 Route::post('/admin/register', [AuthController::class, 'adminRegister']);
 Route::post('/admin/login', [AuthController::class, 'adminLogin']);
+
+Route::post('/trainer/register', [AuthController::class, 'trainerRegister']);
+Route::post('/trainer/login', [AuthController::class, 'trainerLogin']); 
+
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
@@ -27,6 +31,14 @@ Route::middleware(['auth:sanctum','role:admin'])->group(function() {
     Route::post('/permissions', [PermissionController::class, 'store']);
     Route::put('/permissions/{id}', [PermissionController::class, 'update']);
     Route::delete('/permissions/{id}', [PermissionController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum','role:admin'])->group(function() {
+    Route::get('/admins', [AuthController::class, 'getAdmins']);
+});
+
+Route::middleware(['auth:sanctum','role:admin'])->group(function() {
+    Route::get('/trainers', [AuthController::class, 'getTrainers']);
 });
 
 Route::post('/users/{user}/assign-role', [UserController::class, 'assignRole']);

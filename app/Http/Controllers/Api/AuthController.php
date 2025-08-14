@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use App\Http\Requests\TrainerRegisterRequest;
 
 class AuthController extends Controller
 {
@@ -37,40 +38,70 @@ class AuthController extends Controller
         ], 201);
     }
 
+    public function getAdmins()
+    {
+        // "admin" roluna sahib bütün user-ləri gətir
+        $admins = User::role('admin')->get();
+
+        return response()->json($admins);
+    }
+
     /**
      * Admin qeydiyyatı
      */
-public function adminRegister(Request $request)
-{
-    $validated = $request->validate([
-        'first_name' => 'required|string|max:255',
-        'last_name'  => 'required|string|max:255',
-        'email'      => 'required|string|email|max:255|unique:users',
-        'password'   => 'required|string|min:8',
-    ]);
+    public function adminRegister(Request $request)
+    {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name'  => 'required|string|max:255',
+            'email'      => 'required|string|email|max:255|unique:users',
+            'password'   => 'required|string|min:8',
+        ]);
 
-    // Şifrəni hash edirik
-    $validated['password'] = bcrypt($validated['password']);
+        // Şifrəni hash edirik
+        $validated['password'] = bcrypt($validated['password']);
 
-    $validated['card_id'] = (string) Str::uuid(); 
+        $validated['card_id'] = (string) Str::uuid(); 
 
-    // Yeni user yaradılır
-    $admin = User::create($validated);
+        // Yeni user yaradılır
+        $admin = User::create($validated);
 
-    // Admin rolunu təyin edirik
-    $admin->assignRole('admin');
+        // Admin rolunu təyin edirik
+        $admin->assignRole('admin');
 
-    // Token yaradırıq
-    $token = $admin->createToken('admin-token')->plainTextToken;
+        // Token yaradırıq
+        $token = $admin->createToken('admin-token')->plainTextToken;
 
-    return response()->json([
-        'message' => 'Admin uğurla yaradıldı',
-        'user'    => $admin,
-        'token'   => $token
-    ], 201);
-}
+        return response()->json([
+            'message' => 'Admin uğurla yaradıldı',
+            'user'    => $admin,
+            'token'   => $token
+        ], 201);
+    }
 
+    public function trainerRegister(TrainerRegisterRequest $request)
+    {
+        $data = $request->validated();
 
+        // Şifrəni hash edirik
+        $data['password'] = bcrypt($data['password']);
+        $data['card_id'] = (string) Str::uuid(); 
+
+        // Yeni user yaradılır
+        $trainer = User::create($data);
+
+        // Trainer rolunu təyin edirik
+        $trainer->assignRole('trainer');
+
+        // Token yaradırıq
+        $token = $trainer->createToken('trainer-token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Trainer uğurla yaradıldı',
+            'user'    => $trainer,
+            'token'   => $token
+        ], 201);
+    }
 
     /**
      * Normal login
@@ -125,6 +156,39 @@ public function adminRegister(Request $request)
             'user'  => $user,
             'token' => $token
         ]);
+    }
+
+    public function trainerLogin(Request $request)
+    {
+        $credentials = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if (!Auth::attempt($credentials)) {
+            return response()->json(['message'=>'Email və ya şifrə səhvdir'], 401);
+        }
+
+        $user = Auth::user();
+
+        if (!$user->hasRole('trainer')) {
+            return response()->json(['message'=>'Siz trainer deyilsiniz'], 403);
+        }
+
+        $token = $user->createToken('trainer-token')->plainTextToken;
+
+        return response()->json([
+            'user'  => $user,
+            'token' => $token
+        ]);
+    }
+
+    public function getTrainers()
+    {
+        // "trainer" roluna sahib bütün user-ləri gətir
+        $trainers = User::role('trainer')->get();
+
+        return response()->json($trainers);
     }
 
     /**
