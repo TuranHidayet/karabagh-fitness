@@ -4,80 +4,109 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    /**
+     * Normal istifadəçi qeydiyyatı
+     */
+    public function register(Request $request)
     {
-        try {
-            $request->validate([
-                'email' => 'required|string',
-                'password' => 'required|string',
-            ]);
+        $data = $request->validate([
+            'first_name' => 'required|string',
+            'last_name'  => 'required|string',
+            'email'      => 'required|email|unique:users,email',
+            'password'   => 'required|min:6|confirmed',
+        ]);
 
-            Log::info('Login attempt for email: ' . $request->email);
+        $data['password'] = Hash::make($data['password']);
 
-            $user = User::where('email', $request->email)->first();
+        $user = User::create($data);
 
-            if (!$user) {
-                Log::warning('User not found with email: ' . $request->email);
-                return response()->json(['message' => 'İstifadəçi tapılmadı'], 401);
-            }
-
-            Log::info('User found: ' . $user->email);
-            
-            // Şifrə yoxlanması
-            $passwordCheck = Hash::check($request->password, $user->password);
-            Log::info('Password check result: ' . ($passwordCheck ? 'PASS' : 'FAIL'));
-            
-            if (!$passwordCheck) {
-                Log::warning('Password check failed for user: ' . $user->email);
-                return response()->json(['message' => 'Şifrə yanlışdır'], 401);
-            }
-
-            // Token yaratmaq
-            Log::info('Creating token for user: ' . $user->email);
-            $token = $user->createToken('api-token')->plainTextToken;
-            Log::info('Token created successfully');
-
-            return response()->json([
-                'user' => $user,
-                'token' => $token,
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Login error: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            
-            return response()->json([
-                'message' => 'Server xətası',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function logout(Request $request)
-    {
-        $request->user()->tokens()->delete();
+        $token = $user->createToken('user-token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Çıxış edildi.',
+            'message' => 'İstifadəçi uğurla yaradıldı',
+            'user'    => $user,
+            'token'   => $token
+        ], 201);
+    }
+
+    /**
+     * Admin qeydiyyatı
+     */
+public function adminRegister(Request $request)
+{
+    $validated = $request->validate([
+        'first_name' => 'required|string|max:255',
+        'last_name'  => 'required|string|max:255',
+        'email'      => 'required|string|email|max:255|unique:users',
+        'password'   => 'required|string|min:8',
+    ]);
+
+    // Şifrəni hash edirik
+    $validated['password'] = bcrypt($validated['password']);
+
+    $validated['card_id'] = (string) Str::uuid(); 
+
+    // Yeni user yaradılır
+    $admin = User::create($validated);
+
+    // Admin rolunu təyin edirik
+    $admin->assignRole('admin');
+
+    // Token yaradırıq
+    $token = $admin->createToken('admin-token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'Admin uğurla yaradıldı',
+        'user'    => $admin,
+        'token'   => $token
+    ], 201);
+}
+
+
+
+    /**
+     * Normal login
+     */
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if (!Auth::attempt($credentials)) {
+            throw ValidationException::withMessages([
+                'email' => ['Email və ya şifrə səhvdir.'],
+            ]);
+        }
+
+        $user = Auth::user();
+        $token = $user->createToken('user-token')->plainTextToken;
+
+        return response()->json([
+            'user'  => $user,
+            'token' => $token
         ]);
     }
 
-     public function adminLogin(Request $request)
+    /**
+     * Admin login
+     */
+    public function adminLogin(Request $request)
     {
-        // Validasiya
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+            'email'    => 'required|email',
+            'password' => 'required',
         ]);
 
-        // Giriş cəhd et
         if (!Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['Email və ya şifrə səhvdir.'],
@@ -86,22 +115,25 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        // İstifadəçi admin roluna sahibdir?
         if (!$user->hasRole('admin')) {
             return response()->json(['message' => 'Siz admin deyilsiniz.'], 403);
         }
 
-        // Token yarat (sanctum istifadə olunur)
         $token = $user->createToken('admin-token')->plainTextToken;
 
-        // İstifadəçi məlumatları və token qaytar
         return response()->json([
-            'user' => [
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'email' => $user->email,
-            ],
-            'token' => $token,
+            'user'  => $user,
+            'token' => $token
         ]);
+    }
+
+    /**
+     * Çıxış
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->tokens()->delete();
+
+        return response()->json(['message' => 'Çıxış edildi.']);
     }
 }

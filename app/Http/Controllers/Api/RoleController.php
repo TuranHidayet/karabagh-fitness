@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Models\Role;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
@@ -19,7 +19,10 @@ class RoleController extends Controller
             'name' => 'required|string|unique:roles,name',
         ]);
 
-        $role = Role::create(['name' => $request->name]);
+        $role = Role::create([
+            'name' => $request->name,
+            'guard_name' => 'api'
+        ]);
 
         return response()->json($role, 201);
     }

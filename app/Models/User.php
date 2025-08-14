@@ -24,7 +24,7 @@ class User extends Authenticatable implements FilamentUser
      * @var list<string>
      */
     protected $fillable = [
-         'first_name',
+        'first_name',
         'last_name',
         'birth_date',
         'phone',
@@ -61,7 +61,7 @@ class User extends Authenticatable implements FilamentUser
         'password' => 'hashed',
     ];
 
-    protected $guard_name = 'web';
+    protected $guard_name = 'sanctum';
 
     
     

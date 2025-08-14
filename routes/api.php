@@ -8,6 +8,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\PermissionController;
 
 
 Route::apiResource('users', UserController::class);
@@ -16,11 +17,21 @@ Route::apiResource('packages', PackageController::class);
 Route::apiResource('services', ServiceController::class);
 Route::apiResource('campaigns', CampaignController::class);
 
+Route::post('/admin/register', [AuthController::class, 'adminRegister']);
+Route::post('/admin/login', [AuthController::class, 'adminLogin']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
-Route::middleware(['auth:sanctum'])->post('/users/{user}/assign-role', [UserController::class, 'assignRole']);
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
-Route::post('admin/login', [AuthController::class, 'adminLogin']);
+Route::middleware(['auth:sanctum','role:admin'])->group(function() {
+    Route::get('/permissions', [PermissionController::class, 'index']);
+    Route::post('/permissions', [PermissionController::class, 'store']);
+    Route::put('/permissions/{id}', [PermissionController::class, 'update']);
+    Route::delete('/permissions/{id}', [PermissionController::class, 'destroy']);
+});
+
+Route::post('/users/{user}/assign-role', [UserController::class, 'assignRole']);
+
+
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/admin-panel', function () {

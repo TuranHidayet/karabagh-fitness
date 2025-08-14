@@ -145,21 +145,56 @@ class UserController extends Controller
         return response()->json(['message' => 'İstifadəçi silindi']);
     }
 
-    public function assignRole(Request $request, User $user)
+public function assignRole(Request $request, User $user): JsonResponse
 {
     $request->validate([
-        'role_id' => 'required|exists:roles,id'
+        'role_id' => 'required|exists:roles,id',
     ]);
 
-    $role = \Spatie\Permission\Models\Role::find($request->role_id);
+    $role = Role::find($request->role_id);
 
     if (!$role) {
         return response()->json(['message' => 'Rol tapılmadı'], 404);
     }
 
-    $user->assignRole($role->name);
+    // Debug: User məlumatı
+    \Log::info('User in assignRole', [
+        'id' => $user->id,
+        'email' => $user->email,
+        'guard_name' => $user->guard_name,
+    ]);
 
-    return response()->json(['message' => 'Rol uğurla təyin edildi.'], 201);
+    // Debug: Rol məlumatı
+    \Log::info('Role in assignRole', [
+        'id' => $role->id,
+        'name' => $role->name,
+        'guard_name' => $role->guard_name,
+    ]);
+
+    try {
+        $user->assignRole($role->name);
+
+        // Debug: assignRole-dan sonra rolu yoxla
+        \Log::info('Roles after assignRole', $user->getRoleNames()->toArray());
+
+        // Debug: DB-də real olaraq varmı?
+        $dbRoles = \DB::table('model_has_roles')->where('model_id', $user->id)->get();
+        \Log::info('DB roles after assignRole', $dbRoles->toArray());
+
+    } catch (\Exception $e) {
+        \Log::error('Role təyin edilərkən xəta', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        return response()->json([
+            'message' => 'Rol təyin edilərkən xəta baş verdi',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+
+    return response()->json([
+        'message' => "Rol '{$role->name}' uğurla təyin edildi."
+    ], 201);
 }
 
 
