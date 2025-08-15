@@ -79,30 +79,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function trainerRegister(TrainerRegisterRequest $request)
-    {
-        $data = $request->validated();
-
-        // Şifrəni hash edirik
-        $data['password'] = bcrypt($data['password']);
-        $data['card_id'] = (string) Str::uuid(); 
-
-        // Yeni user yaradılır
-        $trainer = User::create($data);
-
-        // Trainer rolunu təyin edirik
-        $trainer->assignRole('trainer');
-
-        // Token yaradırıq
-        $token = $trainer->createToken('trainer-token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Trainer uğurla yaradıldı',
-            'user'    => $trainer,
-            'token'   => $token
-        ], 201);
-    }
-
     /**
      * Normal login
      */
@@ -156,39 +132,6 @@ class AuthController extends Controller
             'user'  => $user,
             'token' => $token
         ]);
-    }
-
-    public function trainerLogin(Request $request)
-    {
-        $credentials = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
-        ]);
-
-        if (!Auth::attempt($credentials)) {
-            return response()->json(['message'=>'Email və ya şifrə səhvdir'], 401);
-        }
-
-        $user = Auth::user();
-
-        if (!$user->hasRole('trainer')) {
-            return response()->json(['message'=>'Siz trainer deyilsiniz'], 403);
-        }
-
-        $token = $user->createToken('trainer-token')->plainTextToken;
-
-        return response()->json([
-            'user'  => $user,
-            'token' => $token
-        ]);
-    }
-
-    public function getTrainers()
-    {
-        // "trainer" roluna sahib bütün user-ləri gətir
-        $trainers = User::role('trainer')->get();
-
-        return response()->json($trainers);
     }
 
     /**
