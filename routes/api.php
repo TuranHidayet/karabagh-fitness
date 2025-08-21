@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\API\TrainerController;
 use App\Http\Controllers\API\TrainerAuthController;
+use App\Http\Controllers\Api\UserSubscriptionController;
 
 // Users routes
 Route::apiResource('users', UserController::class);
@@ -51,8 +52,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 Route::middleware(['auth:sanctum','role:admin'])->group(function() {
     Route::get('/permissions', [PermissionController::class, 'index']);
     Route::post('/permissions', [PermissionController::class, 'store']);
-    Route::put('/permissions/{id}', [PermissionController::class, 'update']);
-    Route::delete('/permissions/{id}', [PermissionController::class, 'destroy']);
+    Route::put('/permissions/{permission}', [PermissionController::class, 'update']);
+    Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy']);
 });
 
 // Admin management routes
@@ -75,4 +76,16 @@ Route::middleware(['auth:sanctum', 'role:trainer'])->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payments', [PaymentController::class, 'store']);
     Route::get('/payments/{user}', [PaymentController::class, 'index']); 
+});
+
+// İstifadəçi subscription-ları
+Route::prefix('users/{user}')->group(function () {
+    Route::get('subscriptions', [UserSubscriptionController::class, 'index']);
+    Route::post('subscriptions', [UserSubscriptionController::class, 'store']);
+    Route::put('subscriptions/{id}', [UserSubscriptionController::class, 'update']);
+    Route::delete('subscriptions/{id}', [UserSubscriptionController::class, 'destroy']);
+
+    Route::post('subscriptions/{id}/renew', [UserSubscriptionController::class, 'renew']);
+    Route::post('subscriptions/{id}/cancel', [UserSubscriptionController::class, 'cancel']);
+    Route::post('subscriptions/{id}/freeze', [UserSubscriptionController::class, 'freeze']);
 });

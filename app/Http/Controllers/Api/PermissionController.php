@@ -40,10 +40,8 @@ class PermissionController extends Controller
     /**
      * Mövcud permission-u yenilə
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Permission $permission)
     {
-        $permission = Permission::findOrFail($id);
-
         $request->validate([
             'name' => 'required|string|unique:permissions,name,' . $permission->id,
         ]);
@@ -61,13 +59,14 @@ class PermissionController extends Controller
     /**
      * Permission-u sil
      */
-    public function destroy($id)
+    public function destroy(Permission $permission)
     {
-        $permission = Permission::findOrFail($id);
         $permission->delete();
 
         return response()->json([
-            'message' => 'Permission silindi'
+            'message' => 'Permission silindi',
+            'data' => null,
+            'status' => 'success'
         ]);
     }
 }

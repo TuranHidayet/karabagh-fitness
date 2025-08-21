@@ -9,29 +9,26 @@ use Spatie\Permission\Models\Role;
 
 class UserRoleController extends Controller
 {
-public function assignRole(Request $request, $userId)
+    public function assignRole(Request $request, User $user)
     {
-        $request->validate([
+        $data = $request->validate([
             'role_id' => 'required|integer|exists:roles,id',
         ]);
 
-        $user = User::findOrFail($userId);
-        $role = Role::findOrFail($request->role_id);
-
-        if ($role->guard_name !== $user->guard_name) {
-            return response()->json(['error' => 'Guard uyğun deyil'], 422);
-        }
+        $role = Role::findOrFail($data['role_id']);
 
         $user->assignRole($role->name);
 
-        // Cache təmizlə
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        // Debug üçün baxaq nə rol var
         return response()->json([
-            'roles_table' => \DB::table('model_has_roles')->where('model_id', $user->id)->get(),
-            'user_roles' => $user->roles
-        ]);
+                'status' => 'success',
+                'message' => 'Role assigned successfully.',
+                'data' => [
+                'user_id' => $user->id,
+                'roles' => $user->roles->pluck('name') 
+            ]
+        ], 200);
     }
+
+
 }
 

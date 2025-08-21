@@ -19,6 +19,7 @@ class StoreUserRequest extends FormRequest
             'birth_date' => 'required|date',
             'phone' => 'required|string',
             'email' => 'required|email',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'gender' => 'required|in:m,f',
             'guardian_name' => 'nullable|string',
             'guardian_birth_date' => 'nullable|date',
@@ -29,6 +30,7 @@ class StoreUserRequest extends FormRequest
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'promo_code' => 'nullable|string|max:50',
+            'payment_method' => 'nullable|in:card,cash',
         ];
     }
 }

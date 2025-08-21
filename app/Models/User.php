@@ -9,6 +9,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Permission\Models\Role;
+use App\Models\UserSubscription;
 use Filament\Panel;
 use Carbon\Carbon;
 
@@ -29,6 +30,7 @@ class User extends Authenticatable implements FilamentUser
         'birth_date',
         'phone',
         'email',
+        'image',
         'gender',
         'guardian_name',
         'guardian_birth_date',
@@ -39,6 +41,7 @@ class User extends Authenticatable implements FilamentUser
         'start_date',
         'end_date',
         'promo_code',
+        'payment_method',
     ];
 
     /**
@@ -51,6 +54,7 @@ class User extends Authenticatable implements FilamentUser
         'remember_token',
     ];
 
+    
     /**
      * Get the attributes that should be cast.
      *
@@ -60,6 +64,11 @@ class User extends Authenticatable implements FilamentUser
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function subscriptions()
+    {
+        return $this->hasMany(UserSubscription::class);
+    }
 
     protected $guard_name = 'sanctum';
 
