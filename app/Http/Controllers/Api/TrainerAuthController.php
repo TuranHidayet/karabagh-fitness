@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Helpers\CommonHelper;
 
 class TrainerAuthController extends Controller
 {
@@ -13,23 +14,23 @@ class TrainerAuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required|string',
         ]);
 
         $trainer = User::role('trainer')->where('email', $request->email)->first();
 
         if (!$trainer || !Hash::check($request->password, $trainer->password)) {
-            return response()->json(['message' => 'Email və ya şifrə səhvdir'], 401);
+            return CommonHelper::jsonResponse('error', 'Email və ya şifrə səhvdir', null, 401);
         }
 
         // Token yarat
         $token = $trainer->createToken('trainer-token')->plainTextToken;
 
-        return response()->json([
+        return CommonHelper::jsonResponse('success', 'Trainer uğurla daxil oldu', [
             'trainer' => $trainer,
-            'token' => $token
-        ], 200);
+            'token'   => $token
+        ]);
     }
 
     // Logout (token silmək)
@@ -37,7 +38,6 @@ class TrainerAuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logout edildi'], 200);
+        return CommonHelper::jsonResponse('success', 'Trainer uğurla çıxış etdi', null);
     }
 }
-

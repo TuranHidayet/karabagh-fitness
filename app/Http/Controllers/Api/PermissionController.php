@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
-
+use App\Helpers\CommonHelper;
 
 class PermissionController extends Controller
 {
@@ -14,7 +14,7 @@ class PermissionController extends Controller
      */
     public function index()
     {
-        return response()->json(Permission::all());
+        return CommonHelper::jsonResponse('success', 'Bütün icazələr uğurla gətirildi', Permission::all());
     }
 
     /**
@@ -27,14 +27,11 @@ class PermissionController extends Controller
         ]);
 
         $permission = Permission::create([
-            'name' => $request->name,
-            'guard_name' => 'sanctum', // sənin guard adın, ehtiyac varsa dəyiş
+            'name'       => $request->name,
+            'guard_name' => 'sanctum',
         ]);
 
-        return response()->json([
-            'message' => 'Permission əlavə edildi',
-            'permission' => $permission
-        ], 201);
+        return CommonHelper::jsonResponse('success', 'İcazə uğurla yaradıldı', $permission, 201);
     }
 
     /**
@@ -46,14 +43,9 @@ class PermissionController extends Controller
             'name' => 'required|string|unique:permissions,name,' . $permission->id,
         ]);
 
-        $permission->update([
-            'name' => $request->name
-        ]);
+        $permission->update(['name' => $request->name]);
 
-        return response()->json([
-            'message' => 'Permission yeniləndi',
-            'permission' => $permission
-        ]);
+        return CommonHelper::jsonResponse('success', 'İcazə uğurla yeniləndi', $permission);
     }
 
     /**
@@ -63,10 +55,6 @@ class PermissionController extends Controller
     {
         $permission->delete();
 
-        return response()->json([
-            'message' => 'Permission silindi',
-            'data' => null,
-            'status' => 'success'
-        ]);
+        return CommonHelper::jsonResponse('success', 'İcazə uğurla silindi', null);
     }
 }

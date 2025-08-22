@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
-use App\Http\Requests\TrainerRegisterRequest;
+use App\Helpers\CommonHelper;
 
 class AuthController extends Controller
 {
@@ -28,22 +28,21 @@ class AuthController extends Controller
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);
-
         $token = $user->createToken('user-token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'İstifadəçi uğurla yaradıldı',
-            'user'    => $user,
-            'token'   => $token
+        return CommonHelper::jsonResponse('success', 'İstifadəçi uğurla qeydiyyatdan keçdi', [
+            'user'  => $user,
+            'token' => $token
         ], 201);
     }
 
+    /**
+     * Adminləri gətir
+     */
     public function getAdmins()
     {
-        // "admin" roluna sahib bütün user-ləri gətir
         $admins = User::role('admin')->get();
-
-        return response()->json($admins);
+        return CommonHelper::jsonResponse('success', 'Bütün adminlər uğurla gətirildi', $admins);
     }
 
     /**
@@ -58,24 +57,16 @@ class AuthController extends Controller
             'password'   => 'required|string|min:8',
         ]);
 
-        // Şifrəni hash edirik
         $validated['password'] = bcrypt($validated['password']);
+        $validated['card_id']  = (string) Str::uuid(); 
 
-        $validated['card_id'] = (string) Str::uuid(); 
-
-        // Yeni user yaradılır
         $admin = User::create($validated);
-
-        // Admin rolunu təyin edirik
         $admin->assignRole('admin');
-
-        // Token yaradırıq
         $token = $admin->createToken('admin-token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'Admin uğurla yaradıldı',
-            'user'    => $admin,
-            'token'   => $token
+        return CommonHelper::jsonResponse('success', 'Admin uğurla qeydiyyatdan keçdi', [
+            'user'  => $admin,
+            'token' => $token
         ], 201);
     }
 
@@ -91,14 +82,14 @@ class AuthController extends Controller
 
         if (!Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
-                'email' => ['Email və ya şifrə səhvdir.'],
+                'email' => ['Email və ya şifrə yanlışdır.'],
             ]);
         }
 
         $user = Auth::user();
         $token = $user->createToken('user-token')->plainTextToken;
 
-        return response()->json([
+        return CommonHelper::jsonResponse('success', 'Uğurla daxil oldunuz', [
             'user'  => $user,
             'token' => $token
         ]);
@@ -116,19 +107,19 @@ class AuthController extends Controller
 
         if (!Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
-                'email' => ['Email və ya şifrə səhvdir.'],
+                'email' => ['Email və ya şifrə yanlışdır.'],
             ]);
         }
 
         $user = Auth::user();
 
         if (!$user->hasRole('admin')) {
-            return response()->json(['message' => 'Siz admin deyilsiniz.'], 403);
+            return CommonHelper::jsonResponse('error', 'Siz admin deyilsiniz', null, 403);
         }
 
         $token = $user->createToken('admin-token')->plainTextToken;
 
-        return response()->json([
+        return CommonHelper::jsonResponse('success', 'Admin uğurla daxil oldu', [
             'user'  => $user,
             'token' => $token
         ]);
@@ -140,7 +131,6 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
-
-        return response()->json(['message' => 'Çıxış edildi.']);
+        return CommonHelper::jsonResponse('success', 'Çıxış uğurla edildi', null);
     }
 }

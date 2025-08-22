@@ -1,16 +1,17 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
+use App\Helpers\CommonHelper;
 
 class RoleController extends Controller
 {
     public function index()
     {
-        return Role::all();
+        return CommonHelper::jsonResponse('success', 'Bütün rollar uğurla gətirildi', Role::all());
     }
 
     public function store(Request $request)
@@ -20,16 +21,16 @@ class RoleController extends Controller
         ]);
 
         $role = Role::create([
-            'name' => $request->name,
-            'guard_name' => 'sanctum', 
+            'name'       => $request->name,
+            'guard_name' => 'sanctum',
         ]);
 
-        return response()->json($role, 201);
+        return CommonHelper::jsonResponse('success', 'Rol uğurla yaradıldı', $role, 201);
     }
 
     public function show(Role $role)
     {
-        return $role;
+        return CommonHelper::jsonResponse('success', 'Rol uğurla gətirildi', $role);
     }
 
     public function update(Request $request, Role $role)
@@ -40,13 +41,12 @@ class RoleController extends Controller
 
         $role->update(['name' => $request->name]);
 
-        return response()->json($role);
+        return CommonHelper::jsonResponse('success', 'Rol uğurla yeniləndi', $role);
     }
 
     public function destroy(Role $role)
     {
         $role->delete();
-
-        return response()->json(['message' => 'Role silindi']);
+        return CommonHelper::jsonResponse('success', 'Rol uğurla silindi', null);
     }
 }
