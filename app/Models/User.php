@@ -42,6 +42,7 @@ class User extends Authenticatable implements FilamentUser
         'end_date',
         'promo_code',
         'payment_method',
+        'remaining_entries',
     ];
 
     /**
@@ -64,6 +65,10 @@ class User extends Authenticatable implements FilamentUser
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function entries() {
+        return $this->hasMany(Entry::class);
+    }
 
     public function subscriptions()
     {
@@ -98,6 +103,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->belongsTo(Campaign::class);
     }
+    
 
     public function setStartDateAttribute($value)
     {

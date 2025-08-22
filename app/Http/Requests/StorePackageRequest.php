@@ -26,6 +26,7 @@ class StorePackageRequest extends FormRequest
             'duration' => 'required|in:daily,weekly,monthly,yearly',
             'duration_days' => 'nullable|integer|min:1',
             'price' => 'required|numeric|min:0',
+            'total_entries' => 'required|integer|min:1',
         ];
     }
 }

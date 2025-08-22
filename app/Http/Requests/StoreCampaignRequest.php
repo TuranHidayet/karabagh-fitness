@@ -27,6 +27,7 @@ class StoreCampaignRequest extends FormRequest
             'price' => 'required|numeric|min:0',
             'services' => 'nullable|array',
             'services.*' => 'integer|exists:services,id',
+            'total_entries' => 'required|integer|min:1',
         ];
     }
 }

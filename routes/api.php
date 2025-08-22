@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\API\TrainerController;
 use App\Http\Controllers\API\TrainerAuthController;
 use App\Http\Controllers\Api\UserSubscriptionController;
+use App\Http\Controllers\Api\EntryController;
 
 // Users routes
 Route::apiResource('users', UserController::class);
@@ -89,3 +90,7 @@ Route::prefix('users/{user}')->group(function () {
     Route::post('subscriptions/{id}/cancel', [UserSubscriptionController::class, 'cancel']);
     Route::post('subscriptions/{id}/freeze', [UserSubscriptionController::class, 'freeze']);
 });
+
+// Entry routes
+Route::post('/scan-card/{cardId}', [EntryController::class, 'scanCard']);
+

@@ -21,7 +21,7 @@ class UpdateUserRequest extends FormRequest
         'birth_date' => 'nullable|date',
         'phone' => 'nullable|string',
         'email' => 'nullable|email',
-        'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        'image' => 'nullable|string',
         'gender' => 'sometimes|required|in:m,f',
         'guardian_name' => 'nullable|string',
         'guardian_birth_date' => 'nullable|date',

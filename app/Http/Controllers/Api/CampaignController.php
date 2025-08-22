@@ -42,6 +42,7 @@ class CampaignController extends Controller
             'name' => $request->name,
             'duration_months' => $request->duration_months,
             'price' => $request->price,
+            'total_entries' => $request->total_entries, 
         ]);
 
         if ($request->filled('services')) {
@@ -50,7 +51,13 @@ class CampaignController extends Controller
 
         return response()->json([
             'message' => 'Campaign created successfully',
-            'data' => $campaign->load('services')
+            'data' => [
+                'name' => $campaign->name,
+                'duration_months' => $campaign->duration_months,
+                'price' => $campaign->price,
+                'total_entries' => $campaign->total_entries, // <- buraya əlavə et
+                'services' => $campaign->services
+            ]
         ], 201);
     }
 

@@ -19,7 +19,7 @@ class StoreUserRequest extends FormRequest
             'birth_date' => 'required|date',
             'phone' => 'required|string',
             'email' => 'required|email',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|string',
             'gender' => 'required|in:m,f',
             'guardian_name' => 'nullable|string',
             'guardian_birth_date' => 'nullable|date',

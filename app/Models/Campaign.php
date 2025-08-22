@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Campaign extends Model
 {
-    protected $fillable = ['name', 'duration_months', 'price'];
+    protected $fillable = ['name', 'duration_months', 'price', 'total_entries'];
 
 
     public function services()
