@@ -65,12 +65,17 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'stack' => [
+            'driver' => 'stack',
+            'channels' => ['daily'],
+            'ignore_exceptions' => false,
+        ],
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
-            'level' => env('LOG_LEVEL', 'debug'),
-            'days' => env('LOG_DAILY_DAYS', 14),
-            'replace_placeholders' => true,
+            'level' => 'debug',
+            'days' => 14,
+            'formatter' => Monolog\Formatter\JsonFormatter::class,
         ],
 
         'slack' => [

@@ -14,6 +14,7 @@ use App\Http\Controllers\API\TrainerController;
 use App\Http\Controllers\API\TrainerAuthController;
 use App\Http\Controllers\Api\UserSubscriptionController;
 use App\Http\Controllers\Api\EntryController;
+use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 
 // Users routes
 Route::apiResource('users', UserController::class);
@@ -93,4 +94,8 @@ Route::prefix('users/{user}')->group(function () {
 
 // Entry routes
 Route::post('/scan-card/{cardId}', [EntryController::class, 'scanCard']);
+
+// Log viewer route
+Route::get('logs', [LogViewerController::class, 'index']);
+
 

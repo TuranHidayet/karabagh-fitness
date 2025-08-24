@@ -15,13 +15,20 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->alias([
         'role' => \App\Http\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
+        
         ]);
     })
     ->withMiddleware(function (Middleware $middleware) {
     $middleware->api(prepend: [
         \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        \App\Http\Middleware\RequestResponseLogger::class,
     ]);
     })
+
+    ->withProviders([
+        App\Providers\EventServiceProvider::class,
+    ])
+    
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
