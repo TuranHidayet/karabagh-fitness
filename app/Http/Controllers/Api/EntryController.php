@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Entry;
+use App\Models\Campaign;
 use App\Helpers\CommonHelper;
 
 class EntryController extends Controller

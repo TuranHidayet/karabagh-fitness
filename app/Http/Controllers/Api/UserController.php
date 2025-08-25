@@ -86,34 +86,86 @@ class UserController extends Controller
     /**
      * İstifadəçini yenilə
      */
-    public function update(UpdateUserRequest $request, User $user): JsonResponse
-    {
-        $data = $request->validated();
+    /**
+ * İstifadəçini yenilə
+ */
+public function update(UpdateUserRequest $request, User $user): JsonResponse
+{
+    $data = $request->validated();
 
-        if (!empty($data['password'])) {
-            $data['password'] = bcrypt($data['password']);
-        }
-
-        // Şəkil yükləmə (köhnəni silmək də olar)
-        if (!empty($data['image']) || $request->hasFile('image')) {
-            $data['image'] = CommonHelper::uploadImage($data['image'] ?? $request->file('image'), 'users');
-        }
-
-        // Paket varsa tarixləri yenilə
-        if (!empty($data['package_id'])) {
-            $package = Package::findOrFail($data['package_id']);
-            $data['start_date'] = $data['start_date'] ?? now()->format('Y-m-d');
-            $data['end_date'] = CommonHelper::calculateEndDate($data['start_date'], $package);
-        }
-
-        if (empty($user->card_id)) {
-            $data['card_id'] = Str::uuid();
-        }
-
-        $user->update($data);
-
-        return CommonHelper::jsonResponse('success', 'İstifadəçi yeniləndi', $user);
+    if (!empty($data['password'])) {
+        $data['password'] = bcrypt($data['password']);
     }
+
+    // Şəkil yükləmə (köhnəni silmək də olar)
+    if (!empty($data['image']) || $request->hasFile('image')) {
+        $data['image'] = CommonHelper::uploadImage($data['image'] ?? $request->file('image'), 'users');
+    }
+
+    // Kart ID yoxdursa yaradılır
+    if (empty($user->card_id)) {
+        $data['card_id'] = Str::uuid();
+    }
+
+    // Kampaniya və ya paket varsa tarixləri və giriş sayını yenilə
+    $remainingEntries = $user->remaining_entries;
+
+    if (!empty($data['campaign_id'])) {
+        $campaign = Campaign::findOrFail($data['campaign_id']);
+        $data['start_date'] = $data['start_date'] ?? now()->format('Y-m-d');
+        $data['end_date'] = CommonHelper::calculateEndDate($data['start_date'], $campaign);
+        $data['package_id'] = null;
+        $remainingEntries = $campaign->total_entries;
+
+        // Subscription varsa yenilə, yoxsa yarat
+        $subscription = $user->subscriptions()->first();
+        if ($subscription) {
+            $subscription->update([
+                'campaign_id' => $campaign->id,
+                'package_id' => null,
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+            ]);
+        } else {
+            $user->subscriptions()->create([
+                'campaign_id' => $campaign->id,
+                'package_id' => null,
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+            ]);
+        }
+
+    } elseif (!empty($data['package_id'])) {
+        $package = Package::findOrFail($data['package_id']);
+        $data['start_date'] = $data['start_date'] ?? now()->format('Y-m-d');
+        $data['end_date'] = CommonHelper::calculateEndDate($data['start_date'], $package);
+        $remainingEntries = $package->total_entries;
+
+        $subscription = $user->subscriptions()->first();
+        if ($subscription) {
+            $subscription->update([
+                'package_id' => $package->id,
+                'campaign_id' => null,
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+            ]);
+        } else {
+            $user->subscriptions()->create([
+                'package_id' => $package->id,
+                'campaign_id' => null,
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+            ]);
+        }
+    }
+
+    $data['remaining_entries'] = $remainingEntries;
+
+    $user->update($data);
+
+    return CommonHelper::jsonResponse('success', 'İstifadəçi yeniləndi', $user->load('subscriptions'));
+}
+
 
     /**
      * İstifadəçini sil

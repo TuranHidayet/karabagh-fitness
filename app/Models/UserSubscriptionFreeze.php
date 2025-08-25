@@ -14,7 +14,7 @@ class UserSubscriptionFreeze extends Model
         'subscription_id',
         'start_date',
         'end_date',
-        'status', // inactive / active
+        'status', 
     ];
 
     protected $dates = [

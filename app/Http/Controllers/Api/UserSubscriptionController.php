@@ -83,51 +83,61 @@ class UserSubscriptionController extends Controller
         return CommonHelper::jsonResponse('success', 'Subscription uğurla silindi', null);
     }
 
-    public function renew(Request $request, User $user, $id)
-    {
-        $subscription = $user->subscriptions()->findOrFail($id);
+  public function renew(Request $request, User $user, $id)
+{
+    $subscription = $user->subscriptions()->findOrFail($id);
 
-        $data = $request->validate([
-            'package_id'  => 'nullable|exists:packages,id',
-            'campaign_id' => 'nullable|exists:campaigns,id',
-            'start_date'  => 'nullable|date',
-        ]);
+    $data = $request->validate([
+        'package_id'  => 'nullable|exists:packages,id',
+        'campaign_id' => 'nullable|exists:campaigns,id',
+        'start_date'  => 'nullable|date',
+    ]);
 
-        $startDate = isset($data['start_date'])
-            ? Carbon::parse($data['start_date'])
-            : Carbon::parse($subscription->end_date)->addDay();
+    // Başlanğıc tarix
+    $startDate = isset($data['start_date'])
+        ? Carbon::parse($data['start_date'])
+        : Carbon::parse($subscription->end_date)->addDay();
 
-        if (!empty($data['campaign_id'])) {
-            $campaign = Campaign::findOrFail($data['campaign_id']);
-            $endDate = $startDate->copy()->addMonths($campaign->duration_months);
-        } elseif (!empty($data['package_id'])) {
-            $package = Package::findOrFail($data['package_id']);
-            switch ($package->duration_type) {
-                case 'day':   $endDate = $startDate->copy()->addDays($package->duration); break;
-                case 'month': $endDate = $startDate->copy()->addMonths($package->duration); break;
-                case 'year':  $endDate = $startDate->copy()->addYears($package->duration); break;
-                default:      $endDate = $startDate;
-            }
-        } else {
-            return CommonHelper::jsonResponse('error', 'Yeni package və ya campaign tələb olunur', null, 422);
+    // Giriş sayını və bitiş tarixini təyin edirik
+    $remainingEntries = 0;
+
+    if (!empty($data['campaign_id'])) {
+        $campaign = Campaign::findOrFail($data['campaign_id']);
+        $endDate = $startDate->copy()->addMonths($campaign->duration_months);
+        $remainingEntries = $campaign->total_entries;
+    } elseif (!empty($data['package_id'])) {
+        $package = Package::findOrFail($data['package_id']);
+        switch ($package->duration_type) {
+            case 'day':   $endDate = $startDate->copy()->addDays($package->duration); break;
+            case 'month': $endDate = $startDate->copy()->addMonths($package->duration); break;
+            case 'year':  $endDate = $startDate->copy()->addYears($package->duration); break;
+            default:      $endDate = $startDate;
         }
-
-        $newSubscription = $user->subscriptions()->create([
-            'package_id'  => $data['package_id'] ?? null,
-            'campaign_id' => $data['campaign_id'] ?? null,
-            'start_date'  => $startDate->format('Y-m-d'),
-            'end_date'    => $endDate->format('Y-m-d'),
-        ]);
-
-        $user->update([
-            'package_id'  => $data['package_id'] ?? null,
-            'campaign_id' => $data['campaign_id'] ?? null,
-            'start_date'  => $startDate->format('Y-m-d'),
-            'end_date'    => $endDate->format('Y-m-d'),
-        ]);
-
-        return CommonHelper::jsonResponse('success', 'Subscription uğurla yeniləndi', $newSubscription, 201);
+        $remainingEntries = $package->total_entries ?? 0;
+    } else {
+        return CommonHelper::jsonResponse('error', 'Yeni package və ya campaign tələb olunur', null, 422);
     }
+
+    // Yeni subscription yaradılır (tarixi saxlayırıq)
+    $newSubscription = $user->subscriptions()->create([
+        'package_id'  => $data['package_id'] ?? null,
+        'campaign_id' => $data['campaign_id'] ?? null,
+        'start_date'  => $startDate->format('Y-m-d'),
+        'end_date'    => $endDate->format('Y-m-d'),
+    ]);
+
+    // User məlumatlarını update edirik, remaining_entries də yenilənir
+    $user->update([
+        'package_id'        => $data['package_id'] ?? null,
+        'campaign_id'       => $data['campaign_id'] ?? null,
+        'start_date'        => $startDate->format('Y-m-d'),
+        'end_date'          => $endDate->format('Y-m-d'),
+        'remaining_entries' => $remainingEntries,
+    ]);
+
+    return CommonHelper::jsonResponse('success', 'Subscription uğurla yeniləndi', $newSubscription, 201);
+}
+
 
     public function cancel(User $user, $id)
     {
