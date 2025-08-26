@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Entry;
 use App\Models\Campaign;
+use App\Models\Package;
 use App\Helpers\CommonHelper;
 
 class EntryController extends Controller
@@ -20,6 +21,29 @@ class EntryController extends Controller
 
         if (!$user) {
             return CommonHelper::jsonResponse('error', 'İstifadəçi tapılmadı', null, 404);
+        }
+
+        // Smen yoxlanışı (indiki vaxtı alırıq)
+        $currentTime = now()->format('H:i');
+
+        // Əgər user-in kampaniyası varsa
+        if ($user->campaign_id) {
+            $campaign = Campaign::find($user->campaign_id);
+            if ($campaign && $campaign->shift_start && $campaign->shift_end) {
+                if ($currentTime < $campaign->shift_start || $currentTime > $campaign->shift_end) {
+                    return CommonHelper::jsonResponse('error', 'Bu saatlarda giriş icazəli deyil', null, 403);
+                }
+            }
+        }
+
+        // Əgər user-in paketi varsa
+        if ($user->package_id) {
+            $package = Package::find($user->package_id);
+            if ($package && $package->shift_start && $package->shift_end) {
+                if ($currentTime < $package->shift_start || $currentTime > $package->shift_end) {
+                    return CommonHelper::jsonResponse('error', 'Bu saatlarda giriş icazəli deyil', null, 403);
+                }
+            }
         }
 
         // Giriş sayı yoxlanır (yalnız "in" üçün)

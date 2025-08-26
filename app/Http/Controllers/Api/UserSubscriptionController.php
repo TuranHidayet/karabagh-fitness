@@ -62,19 +62,20 @@ class UserSubscriptionController extends Controller
         return CommonHelper::jsonResponse('success', 'Subscription uğurla yaradıldı', $subscription, 201);
     }
 
-    public function update(Request $request, User $user, $id)
-    {
-        $subscription = $user->subscriptions()->findOrFail($id);
+    // public function update(Request $request, User $user, $id)
+    // {
+    //     $subscription = $user->subscriptions()->findOrFail($id);
 
-        $data = $request->validate([
-            'start_date' => 'nullable|date',
-            'end_date'   => 'nullable|date',
-        ]);
+    //     $data = $request->validate([
+    //         'start_date' => 'nullable|date',
+    //         'end_date'   => 'nullable|date',
+            
+    //     ]);
 
-        $subscription->update($data);
+    //     $subscription->update($data);
 
-        return CommonHelper::jsonResponse('success', 'Subscription uğurla yeniləndi', $subscription);
-    }
+    //     return CommonHelper::jsonResponse('success', 'Subscription uğurla yeniləndi', $subscription);
+    // }
 
     public function destroy(User $user, $id)
     {

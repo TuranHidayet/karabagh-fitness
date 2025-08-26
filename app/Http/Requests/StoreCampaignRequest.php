@@ -28,6 +28,8 @@ class StoreCampaignRequest extends FormRequest
             'services' => 'nullable|array',
             'services.*' => 'integer|exists:services,id',
             'total_entries' => 'required|integer|min:1',
+            'shift_start' => 'nullable|date_format:H:i',
+            'shift_end' => 'nullable|date_format:H:i',
         ];
     }
 }

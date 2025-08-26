@@ -37,6 +37,8 @@ class CampaignController extends Controller
             'duration_months' => $request->duration_months,
             'price'           => $request->price,
             'total_entries'   => $request->total_entries, 
+            'shift_start'     => $request->shift_start,  
+            'shift_end'       => $request->shift_end,
         ]);
 
         if ($request->filled('services')) {
@@ -60,6 +62,8 @@ class CampaignController extends Controller
             'name'            => $request->name,
             'duration_months' => $request->duration_months,
             'price'           => $request->price,
+            'shift_start'     => $request->shift_start,  
+            'shift_end'       => $request->shift_end,
         ]);
 
         if ($request->filled('services')) {
