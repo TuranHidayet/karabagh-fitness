@@ -44,9 +44,31 @@ class RoleController extends Controller
         return CommonHelper::jsonResponse('success', 'Rol uğurla yeniləndi', $role);
     }
 
-    public function destroy(Role $role)
-    {
-        $role->delete();
+public function destroy($roleId)
+{
+    try {
+        // Role-un mövcudluğunu yoxla
+        $role = \DB::table('roles')->where('id', $roleId)->first();
+        if (!$role) {
+            return CommonHelper::jsonResponse('error', 'Rol tapılmadı', null, 404);
+        }
+        
+        // Rolun icazələrini sil
+        \DB::table('role_has_permissions')->where('role_id', $roleId)->delete();
+        
+        // Rolun istifadəçilərini sil
+        \DB::table('model_has_roles')->where('role_id', $roleId)->delete();
+        
+        // Rolu sil
+        \DB::table('roles')->where('id', $roleId)->delete();
+        
+        // Cache təmizlə
+        \Cache::forget('spatie.permission.cache');
+        
         return CommonHelper::jsonResponse('success', 'Rol uğurla silindi', null);
+        
+    } catch (\Exception $e) {
+        return CommonHelper::jsonResponse('error', 'Rol silinərkən xəta baş verdi: ' . $e->getMessage(), null, 500);
     }
+}
 }

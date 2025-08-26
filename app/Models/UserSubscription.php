@@ -38,6 +38,7 @@ class UserSubscription extends Model
         return $this->belongsTo(Campaign::class);
     }
 
+    // Abunəliyin dondurulma tarixçəsi
     public function freezes()
     {
         return $this->hasMany(UserSubscriptionFreeze::class, 'subscription_id');

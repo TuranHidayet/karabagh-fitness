@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Package;
+use App\Models\UserSubscriptionFreeze;
 use App\Models\Campaign;
 use Carbon\Carbon;
 use App\Helpers\CommonHelper;
@@ -149,29 +150,51 @@ class UserSubscriptionController extends Controller
         return CommonHelper::jsonResponse('success', 'Subscription uğurla ləğv edildi', $subscription);
     }
 
-    public function freeze(Request $request, User $user, $id)
-    {
+public function freeze(Request $request, User $user, $id)
+{
+    try {
+        // Debug: User və subscription-u yoxlayaq
+        \Log::info('Freeze başladı', ['user_id' => $user->id, 'subscription_id' => $id]);
+        
         $subscription = $user->subscriptions()->findOrFail($id);
+        \Log::info('Subscription tapıldı', ['subscription' => $subscription->toArray()]);
 
         $data = $request->validate([
             'months'     => 'required|integer|min:1',
             'start_date' => 'nullable|date'
         ]);
+        \Log::info('Validation keçdi', ['data' => $data]);
 
         $freezeStart = isset($data['start_date']) ? Carbon::parse($data['start_date']) : Carbon::now();
         $freezeEnd   = $freezeStart->copy()->addMonths($data['months']);
-
-        $freeze = $subscription->freezes()->create([
-            'user_id'    => $user->id,
-            'start_date' => $freezeStart->format('Y-m-d'),
-            'end_date'   => $freezeEnd->format('Y-m-d'),
-            'status'     => 'inactive',
+        
+        \Log::info('Tarixlər hazırlandı', [
+            'freeze_start' => $freezeStart->format('Y-m-d'),
+            'freeze_end' => $freezeEnd->format('Y-m-d')
         ]);
+
+        // Birbaşa create etməyə çalışaq
+        $freeze = UserSubscriptionFreeze::create([
+            'user_id'        => $user->id,
+            'subscription_id' => $subscription->id,
+            'start_date'     => $freezeStart->format('Y-m-d'),
+            'end_date'       => $freezeEnd->format('Y-m-d'),
+            'status'         => 'inactive',
+        ]);
+        
+        \Log::info('Freeze yaradıldı', ['freeze' => $freeze->toArray()]);
 
         $subscription->update([
             'end_date' => Carbon::parse($subscription->end_date)->addMonths($data['months'])->format('Y-m-d')
         ]);
+        
+        \Log::info('Subscription yeniləndi');
 
         return CommonHelper::jsonResponse('success', 'Subscription uğurla donduruldu', $freeze, 201);
+        
+    } catch (\Exception $e) {
+        \Log::error('Freeze xətası', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+        return CommonHelper::jsonResponse('error', 'Xəta baş verdi: ' . $e->getMessage(), null, 500);
     }
+}
 }

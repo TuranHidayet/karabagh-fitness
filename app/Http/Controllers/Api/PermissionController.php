@@ -51,10 +51,31 @@ class PermissionController extends Controller
     /**
      * Permission-u sil
      */
-    public function destroy(Permission $permission)
+    public function destroy($permissionId)
     {
-        $permission->delete();
-
-        return CommonHelper::jsonResponse('success', 'İcazə uğurla silindi', null);
+        try {
+            // Permission-un mövcudluğunu yoxla
+            $permission = \DB::table('permissions')->where('id', $permissionId)->first();
+            if (!$permission) {
+                return CommonHelper::jsonResponse('error', 'İcazə tapılmadı', null, 404);
+            }
+            
+            // Permission-un rollarını sil
+            \DB::table('role_has_permissions')->where('permission_id', $permissionId)->delete();
+            
+            // Permission-un istifadəçilərini sil
+            \DB::table('model_has_permissions')->where('permission_id', $permissionId)->delete();
+            
+            // Permission-u sil
+            \DB::table('permissions')->where('id', $permissionId)->delete();
+            
+            // Cache təmizlə
+            \Cache::forget('spatie.permission.cache');
+            
+            return CommonHelper::jsonResponse('success', 'İcazə uğurla silindi', null);
+            
+        } catch (\Exception $e) {
+            return CommonHelper::jsonResponse('error', 'İcazə silinərkən xəta baş verdi: ' . $e->getMessage(), null, 500);
+        }
     }
 }

@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\UserSubscription;
+use Carbon\Carbon;
+use App\Models\User;
 
 class UserSubscriptionFreeze extends Model
 {
@@ -17,18 +20,16 @@ class UserSubscriptionFreeze extends Model
         'status', 
     ];
 
-    protected $dates = [
-        'start_date',
-        'end_date',
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
 
-    // Freeze aid olduğu subscription
     public function subscription()
     {
         return $this->belongsTo(UserSubscription::class, 'subscription_id');
     }
 
-    // Freeze aid olduğu user
     public function user()
     {
         return $this->belongsTo(User::class);
