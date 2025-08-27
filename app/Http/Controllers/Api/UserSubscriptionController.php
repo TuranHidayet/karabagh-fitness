@@ -141,61 +141,111 @@ class UserSubscriptionController extends Controller
 }
 
 
-    public function cancel(User $user, $id)
-    {
-        $subscription = $user->subscriptions()->findOrFail($id);
-        $subscription->update([
-            'end_date' => Carbon::now()->format('Y-m-d')
-        ]);
-
-        return CommonHelper::jsonResponse('success', 'Subscription uğurla ləğv edildi', $subscription);
-    }
-
-public function freeze(Request $request, User $user, $id)
+public function freeze(Request $request, $userId, $id)
 {
     try {
-        // Debug: User və subscription-u yoxlayaq
-        \Log::info('Freeze başladı', ['user_id' => $user->id, 'subscription_id' => $id]);
-        
+        $user = User::findOrFail($userId);
         $subscription = $user->subscriptions()->findOrFail($id);
-        \Log::info('Subscription tapıldı', ['subscription' => $subscription->toArray()]);
+
+        // Freeze üçün minimum müddət yoxlaması
+        if ($subscription->campaign && $subscription->campaign->duration_months <= 1) {
+            return CommonHelper::jsonResponse('error', 'Bu kampaniya üçün dondurma mümkün deyil', null, 403);
+        }
+
+        if ($subscription->package) {
+            if (
+                (isset($subscription->package->duration_months) && $subscription->package->duration_months <= 1) ||
+                (isset($subscription->package->duration) && $subscription->package->duration <= 1 && empty($subscription->package->duration_days)) ||
+                (isset($subscription->package->duration_days) && $subscription->package->duration_days <= 30)
+            ) {
+                return CommonHelper::jsonResponse('error', 'Bu paket üçün dondurma mümkün deyil', null, 403);
+            }
+        }
 
         $data = $request->validate([
             'months'     => 'required|integer|min:1',
             'start_date' => 'nullable|date'
         ]);
-        \Log::info('Validation keçdi', ['data' => $data]);
 
         $freezeStart = isset($data['start_date']) ? Carbon::parse($data['start_date']) : Carbon::now();
         $freezeEnd   = $freezeStart->copy()->addMonths($data['months']);
-        
-        \Log::info('Tarixlər hazırlandı', [
-            'freeze_start' => $freezeStart->format('Y-m-d'),
-            'freeze_end' => $freezeEnd->format('Y-m-d')
-        ]);
 
-        // Birbaşa create etməyə çalışaq
+        $subscriptionStart = Carbon::parse($subscription->start_date);
+        $subscriptionEnd   = Carbon::parse($subscription->end_date);
+
+        if ($freezeStart->lt($subscriptionStart) || $freezeEnd->gt($subscriptionEnd)) {
+            return CommonHelper::jsonResponse('error', 'Dondurma yalnız abunəlik müddəti çərçivəsində ola bilər', null, 403);
+        }
+
+        // Freeze entry yaradılır
         $freeze = UserSubscriptionFreeze::create([
-            'user_id'        => $user->id,
+            'user_id'         => $user->id,
             'subscription_id' => $subscription->id,
-            'start_date'     => $freezeStart->format('Y-m-d'),
-            'end_date'       => $freezeEnd->format('Y-m-d'),
-            'status'         => 'inactive',
+            'start_date'      => $freezeStart->format('Y-m-d'),
+            'end_date'        => $freezeEnd->format('Y-m-d'),
+            'status'          => 'inactive',
         ]);
-        
-        \Log::info('Freeze yaradıldı', ['freeze' => $freeze->toArray()]);
 
+        // Subscription-un end_date uzadılır
         $subscription->update([
             'end_date' => Carbon::parse($subscription->end_date)->addMonths($data['months'])->format('Y-m-d')
         ]);
-        
-        \Log::info('Subscription yeniləndi');
 
         return CommonHelper::jsonResponse('success', 'Subscription uğurla donduruldu', $freeze, 201);
-        
+
     } catch (\Exception $e) {
-        \Log::error('Freeze xətası', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+        \Log::error('Freeze xətası', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
         return CommonHelper::jsonResponse('error', 'Xəta baş verdi: ' . $e->getMessage(), null, 500);
     }
 }
+
+public function cancelFreeze($userId, $subscriptionId)
+{
+    try {
+        $user = User::findOrFail($userId);
+        $subscription = $user->subscriptions()->findOrFail($subscriptionId);
+
+        $freeze = UserSubscriptionFreeze::where('subscription_id', $subscription->id)
+            ->where('status', 'inactive')
+            ->latest('created_at')
+            ->first();
+
+        if (!$freeze) {
+            return CommonHelper::jsonResponse('error', 'Dondurma tapılmadı', null, 404);
+        }
+
+        $today = Carbon::now();
+        $freezeStart = Carbon::parse($freeze->start_date);
+        $freezeEnd   = Carbon::parse($freeze->end_date);
+
+        // Keçmiş günləri hesabla, amma mənfi olmayacaq
+        $daysPassed = $today->greaterThan($freezeStart) ? $freezeStart->diffInDays($today) : 0;
+        $totalFreezeDays = $freezeStart->diffInDays($freezeEnd);
+        $remainingDays = max(0, $totalFreezeDays - $daysPassed);
+
+        // Subscription end_date-dən qalan dondurma günlərini çıx
+        if ($remainingDays > 0) {
+            $subscription->update([
+                'end_date' => Carbon::parse($subscription->end_date)->subDays($remainingDays)->format('Y-m-d')
+            ]);
+        }
+
+        $freeze->delete(); // freeze silinir
+
+        return CommonHelper::jsonResponse('success', 'Dondurma uğurla ləğv edildi', $subscription);
+
+    } catch (\Exception $e) {
+        \Log::error('CancelFreeze xətası', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return CommonHelper::jsonResponse('error', 'Xəta baş verdi: ' . $e->getMessage(), null, 500);
+    }
+}
+
+
+
 }

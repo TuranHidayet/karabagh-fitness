@@ -61,8 +61,8 @@ Route::middleware(['auth:sanctum','role:admin'])->group(function () {
         Route::delete('subscriptions/{id}', [UserSubscriptionController::class, 'destroy']);
 
         Route::post('subscriptions/{id}/renew', [UserSubscriptionController::class, 'renew']);
-        Route::post('subscriptions/{id}/cancel', [UserSubscriptionController::class, 'cancel']);
         Route::post('subscriptions/{id}/freeze', [UserSubscriptionController::class, 'freeze']);
+        Route::post('subscriptions/{id}/cancel', [UserSubscriptionController::class, 'cancelFreeze']);
     });
 
     // Entry routes

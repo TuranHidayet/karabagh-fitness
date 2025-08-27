@@ -39,14 +39,17 @@ class CommonHelper
     {
         $start = Carbon::parse($startDate);
 
-        if ($model->getTable() === 'packages') {
-            switch ($model->duration_type) {
-                case 'day': $end = $start->copy()->addDays($model->duration); break;
-                case 'month': $end = $start->copy()->addMonths($model->duration); break;
-                case 'year': $end = $start->copy()->addYears($model->duration); break;
-                default: $end = $start;
+         if ($model->getTable() === 'packages') {
+            // duration_type yoxdursa default days kimi qəbul edirik
+            if (!empty($model->duration_days) && $model->duration_days > 0) {
+                $end = $start->copy()->addDays($model->duration_days);
+            } elseif (!empty($model->duration) && $model->duration > 0) {
+                // duration ay kimi nəzərə alınır
+                $end = $start->copy()->addMonths($model->duration);
+            } else {
+                $end = $start;
             }
-        } else if ($model->getTable() === 'campaigns') {
+        } elseif ($model->getTable() === 'campaigns') {
             $end = $start->copy()->addMonths($model->duration_months);
         } else {
             $end = $start;
