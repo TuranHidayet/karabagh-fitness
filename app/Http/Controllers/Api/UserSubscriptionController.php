@@ -140,6 +140,35 @@ class UserSubscriptionController extends Controller
     return CommonHelper::jsonResponse('success', 'Subscription uğurla yeniləndi', $newSubscription, 201);
 }
 
+public function update(Request $request, $userId, $subscriptionId)
+    {
+        $user = User::findOrFail($userId);
+        $subscription = $user->subscriptions()->findOrFail($subscriptionId);
+
+        $data = $request->validate([
+            'start_date' => 'required|date',
+        ]);
+
+        $startDate = Carbon::parse($data['start_date']);
+        $endDate   = Carbon::parse($subscription->end_date);
+
+        // Yeni start_date ilə end_date-i paket/campaign-dən asılı olaraq yenilə
+        if ($subscription->package) {
+            $durationDays = $subscription->package->duration_days;
+            $endDate = $startDate->copy()->addDays($durationDays);
+        } elseif ($subscription->campaign) {
+            $durationMonths = $subscription->campaign->duration_months;
+            $endDate = $startDate->copy()->addMonths($durationMonths);
+        }
+
+        $subscription->update([
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date'   => $endDate->format('Y-m-d'),
+        ]);
+
+        return CommonHelper::jsonResponse('success', 'Abunəlik yeniləndi', $subscription);
+    }
+
 
 public function freeze(Request $request, $userId, $id)
 {
