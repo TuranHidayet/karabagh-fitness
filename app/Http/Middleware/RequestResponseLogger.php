@@ -15,16 +15,24 @@ class RequestResponseLogger
             'password','password_confirmation','current_password','token'
         ]);
 
-        LogEntry::create([
-            'message' => 'HTTP REQUEST',
-            'level'   => 'info',
-            'method'  => $request->method(),
-            'path'    => $request->path(),
-            'ip'      => $request->ip(),
-            'user_id' => optional($request->user())->id,
-            'payload' => $masked,
-            'ua'      => substr((string) $request->userAgent(), 0, 255),
+        try {
+            LogEntry::create([
+            'message'    => 'HTTP REQUEST',
+            'level'      => 'info',
+            'channel'    => 'http',
+            'method'     => $request->method(),
+            'path'       => $request->path(),
+            'ip'         => $request->ip(),
+            'user_id'    => optional($request->user())->id,
+            'payload'    => $masked,
+            'ua'         => substr((string) $request->userAgent(), 0, 255),
+            'created_at' => now(),
         ]);
+        } catch (\Exception $e) {
+            \Log::error("Log DB-yə yazılmadı: ".$e->getMessage());
+        }
+
+        
 
         $response = $next($request);
 
@@ -35,8 +43,12 @@ class RequestResponseLogger
             'path'    => $request->path(),
             'ip'      => $request->ip(),
             'user_id' => optional($request->user())->id,
-            'payload' => ['status' => $response->getStatusCode()],
+            'payload' => [
+                'status' => $response->getStatusCode(),
+                'body'   => method_exists($response, 'getContent') ? substr($response->getContent(), 0, 500) : null
+            ],
             'ua'      => substr((string) $request->userAgent(), 0, 255),
+            'created_at' => now(),
         ]);
 
         return $response;

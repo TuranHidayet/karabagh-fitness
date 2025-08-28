@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LogEntry;
 use Illuminate\Http\Request;
+use App\Helpers\CommonHelper;
 
 class LogController extends Controller
 {

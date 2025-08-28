@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Models\LogEntry;
 
 class CommonHelper
 {
@@ -69,4 +70,20 @@ class CommonHelper
             'data' => $data
         ], $code);
     }
+
+    // public static function add($message, $level = 'info', $payload = [])
+    // {
+    //     $request = request();
+
+    //     return LogEntry::create([
+    //         'message'  => $message,             
+    //         'level'    => $level,               
+    //         'method'   => $request->method(),   
+    //         'path'     => $request->path(),     
+    //         'ip'       => $request->ip(),      
+    //         'user_id'  => Auth::id(),           
+    //         'payload'  => $payload,            
+    //         'ua'       => $request->userAgent()
+    //     ]);
+    // }
 }

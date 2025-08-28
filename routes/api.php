@@ -70,6 +70,7 @@ Route::middleware(['auth:sanctum','role:admin'])->group(function () {
 
     // Log viewer route
     Route::get('logs', [LogViewerController::class, 'index']);
+    Route::get('/logs', [LogController::class, 'index']);
 });
 
 // Auth routes (admin və trainer login/logout istisna qalır)
@@ -85,5 +86,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/trainer/logout', [TrainerAuthController::class, 'logout']);
 });
 
-Route::get('/logs', [LogController::class, 'index']);
+// Entry routes
+Route::post('/scan-card/{cardId}', [EntryController::class, 'scanCard']);
+
+
 

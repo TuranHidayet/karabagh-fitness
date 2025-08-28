@@ -173,6 +173,11 @@ public function update(UpdateUserRequest $request, User $user): JsonResponse
     public function destroy(User $user): JsonResponse
     {
         $user->delete();
+        // CommonHelper::add(
+        //     "İstifadəçi silindi: {$user->fullname}", // message
+        //     'info', // level
+        //     ['deleted_user' => $user->toArray()] // payload
+        // );
         return CommonHelper::jsonResponse('success', 'İstifadəçi silindi');
     }
 }
